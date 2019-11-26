@@ -34,6 +34,9 @@ initial begin
         CPU.Registers.register[i] = 32'b0;
     end
 
+    // initialize PC
+    CPU.PC.pc_o = 32'b0;
+
     // TODO: initialize pipeline registers
     
     // Load instructions into instruction memory

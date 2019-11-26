@@ -10,6 +10,7 @@ input         start_i;
 
 PC PC(
     .clk_i          (),
+    .rst_i          (1'b1), // reset in testbench
     .start_i        (),
     .PCWrite_i      (),
     .pc_i           (),
