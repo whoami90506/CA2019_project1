@@ -34,10 +34,24 @@ initial begin
         CPU.Registers.register[i] = 32'b0;
     end
 
-    // initialize PC
+    // initialize PC By Cheng-De Lin
     CPU.PC.pc_o = 32'b0;
 
     // TODO: initialize pipeline registers
+    CPU.ID_EX_MemWr  = 1'b0;
+    CPU.ID_EX_RegWr  = 1'b0;
+    CPU.ID_EX_Branch = 1'b0;
+    CPU.ID_EX_valid  = 1'b0;
+
+    CPU.EX_MEM_MemWr  = 1'b0;
+    CPU.EX_MEM_RegWr  = 1'b0;
+    CPU.EX_MEM_Branch = 1'b0;
+
+    CPU.MEM_WB_RegWr  = 1'b0;
+
+    //dumpvcd by Cheng-De Lin
+    $dumpfile("CPU.vcd");
+    $dumpvars;
     
     // Load instructions into instruction memory
     $readmemb("../testdata/instruction.txt", CPU.Instruction_Memory.memory);
@@ -66,7 +80,7 @@ always@(posedge Clk) begin
 
     // TODO: put in your own signal to count stall and flush
     // if(CPU.HazardDetection.Stall_o == 1 && CPU.Control.Branch_o == 0)stall = stall + 1;
-    // if(CPU.HazardDetection.Flush_o == 1)flush = flush + 1;  
+    if(CPU.MEM_PCSrc == 1)flush = flush + 1;  
    
 
     // print PC
