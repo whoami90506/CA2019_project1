@@ -38,16 +38,39 @@ initial begin
     CPU.PC.pc_o = 32'b0;
 
     // TODO: initialize pipeline registers
-    CPU.ID_EX_MemWr  = 1'b0;
-    CPU.ID_EX_RegWr  = 1'b0;
-    CPU.ID_EX_Branch = 1'b0;
-    CPU.ID_EX_valid  = 1'b0;
+    CPU.IF_ID_pc=0;
+    CPU.IF_ID_instr=0;
 
-    CPU.EX_MEM_MemWr  = 1'b0;
-    CPU.EX_MEM_RegWr  = 1'b0;
-    CPU.EX_MEM_Branch = 1'b0;
-
-    CPU.MEM_WB_RegWr  = 1'b0;
+    CPU.ID_EX_pc=0;
+    CPU.ID_EX_RS1_addr=0;
+    CPU.ID_EX_RS1_data=0;
+    CPU.ID_EX_RS2_addr=0;
+    CPU.ID_EX_RS2_data=0;
+    CPU.ID_EX_RD=0;
+    CPU.ID_EX_imm=0;
+    CPU.ID_EX_ALUOp=0;
+    CPU.ID_EX_ALUSrc=0;
+    CPU.ID_EX_MemWr=0;
+    CPU.ID_EX_Branch=0;
+    CPU.ID_EX_MemtoReg=0;
+    CPU.ID_EX_RegWr=0;
+    CPU.ID_EX_ALUinstr=0;
+    CPU.ID_EX_valid=0;
+    
+    CPU.EX_MEM_pc=0;
+    CPU.EX_MEM_ALUResult=0;
+    CPU.EX_MEM_RS2_data=0;
+    CPU.EX_MEM_RD=0;
+    CPU.EX_MEM_MemWr=0;
+    CPU.EX_MEM_Branch=0;
+    CPU.EX_MEM_MemtoReg=0;
+    CPU.EX_MEM_RegWr=0;
+    
+    CPU.MEM_WB_MemData=0;
+    CPU.MEM_WB_ALUResult=0;
+    CPU.MEM_WB_RD=0;
+    CPU.MEM_WB_MemtoReg=0;
+    CPU.MEM_WB_RegWr=0;
 
     //dumpvcd by Cheng-De Lin
     $dumpfile("CPU.vcd");
@@ -62,7 +85,10 @@ initial begin
     // Set Input n into data memory at 0x00
     CPU.Data_Memory.memory[0] = 8'h5;       // n = 5 for example
     
-    Clk = 1;
+    //****************************************************
+    // change initial clk from 1 to 0 by Cheng-De Lin
+    //**************************************************** 
+    Clk = 0;
     //Reset = 0;
     Start = 0;
     
