@@ -14,7 +14,9 @@ module CPU (
 
 // IF/ID
 reg  [31:0] IF_ID_pc, IF_ID_instr;
+reg         IF_ID_valid; // for PCSrc to flush the instuction in IF && check if start
 wire [31:0] n_IF_ID_pc, n_IF_ID_instr; 
+wire        n_IF_ID_valid;
 
 // ID/EX
 reg  [31:0] ID_EX_pc;
@@ -24,7 +26,6 @@ reg  [11:0] ID_EX_imm;
 reg  [ 1:0] ID_EX_ALUOp;
 reg         ID_EX_ALUSrc, ID_EX_MemWr, ID_EX_Branch, ID_EX_MemtoReg, ID_EX_RegWr;
 reg  [ 4:0] ID_EX_ALUinstr;
-reg         ID_EX_valid; // for PCSrc to flush the instuction in IF
 wire [31:0] n_ID_EX_pc;
 wire [ 4:0] n_ID_EX_RS1_addr, n_ID_EX_RS2_addr, n_ID_EX_RD;
 wire [31:0] n_ID_EX_RS1_data, n_ID_EX_RS2_data;
@@ -32,7 +33,6 @@ wire [11:0] n_ID_EX_imm;
 wire [ 1:0] n_ID_EX_ALUOp;
 wire        n_ID_EX_ALUSrc, n_ID_EX_MemWr, n_ID_EX_Branch, n_ID_EX_MemtoReg, n_ID_EX_RegWr;
 wire [ 4:0] n_ID_EX_ALUinstr;
-wire        n_ID_EX_valid;
 
 // EX/MEM
 reg  [31:0] EX_MEM_pc, EX_MEM_ALUResult, EX_MEM_RS2_data;
@@ -65,7 +65,7 @@ wire [31:0] ALUResult;
 wire [31:0] MemData;
 
 // pure wire
-wire [31:0] IF_pc_i;
+wire [31:0] IF_next_pc;
 
 wire [4:0] ID_RS1_addr, ID_RS2_addr, ID_RD;
 wire [6:0] ID_Opcode;
@@ -81,10 +81,11 @@ wire [31:0] WB_Data;
 /*********************** 
       wire assignment
 ************************/
-assign IF_pc_i = MEM_PCSrc ? EX_MEM_pc : PC_pc + 32'd4;
+assign IF_next_pc = MEM_PCSrc ? EX_MEM_pc : PC_pc + 32'd4;
 
 assign n_IF_ID_pc    = PC_pc;
 assign n_IF_ID_instr = InstrMem_instr;
+assign n_IF_ID_valid    = ~MEM_PCSrc & start_i;
 
 assign ID_RS1_addr        = IF_ID_instr[19:15];
 assign ID_RS2_addr        = IF_ID_instr[24:20];
@@ -101,12 +102,11 @@ assign n_ID_EX_RS2_data = Reg_RS2_data;
 assign n_ID_EX_imm      = ImmGen_imm;
 assign n_ID_EX_ALUOp    = Ctr_ALUOp;
 assign n_ID_EX_ALUSrc   = Ctr_ALUSrc;
-assign n_ID_EX_MemWr    = Ctr_MemWr  & ~MEM_PCSrc & ID_EX_valid;
-assign n_ID_EX_Branch   = Ctr_Branch & ~MEM_PCSrc & ID_EX_valid;
+assign n_ID_EX_MemWr    = Ctr_MemWr  & ~MEM_PCSrc & IF_ID_valid;
+assign n_ID_EX_Branch   = Ctr_Branch & ~MEM_PCSrc & IF_ID_valid;
 assign n_ID_EX_MemtoReg = Ctr_MemtoReg;
-assign n_ID_EX_RegWr    = Ctr_RegWr  & ~MEM_PCSrc & ID_EX_valid;
+assign n_ID_EX_RegWr    = Ctr_RegWr  & ~MEM_PCSrc & IF_ID_valid;
 assign n_ID_EX_ALUinstr = ID_ALUCtr_instr_in;
-assign n_ID_EX_valid    = ~MEM_PCSrc;
 
 assign EX_imm_ext       = { {20{ID_EX_imm[11]}}, ID_EX_imm};
 assign EX_imm_ext_shift = {EX_imm_ext[30:0], 1'd0};
@@ -152,7 +152,7 @@ always @(posedge clk_i) begin
     ID_EX_MemtoReg <= n_ID_EX_MemtoReg;
     ID_EX_RegWr    <= n_ID_EX_RegWr;
     ID_EX_ALUinstr <= n_ID_EX_ALUinstr;
-    ID_EX_valid    <= n_ID_EX_valid;
+    IF_ID_valid    <= n_IF_ID_valid;
 
     EX_MEM_pc        <= n_EX_MEM_pc;
     EX_MEM_ALUResult <= n_EX_MEM_ALUResult;
@@ -178,7 +178,7 @@ PC PC(
     .rst_i          (1'b1), // reset in testbench
     .start_i        (start_i),
     .PCWrite_i      (1'b1), // set 0 for stall
-    .pc_i           (IF_pc_i),
+    .pc_i           (IF_next_pc),
     .pc_o           (PC_pc)
 );
 
@@ -199,7 +199,6 @@ Registers Registers(
 );
 
 Control Control(
-    .start_i  (start_i),
     .opcode_i (ID_Opcode),
     .ALUSrc_o (Ctr_ALUSrc),
     .ALUOp_o (Ctr_ALUOp),

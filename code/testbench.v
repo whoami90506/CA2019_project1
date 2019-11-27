@@ -40,6 +40,7 @@ initial begin
     // TODO: initialize pipeline registers
     CPU.IF_ID_pc=0;
     CPU.IF_ID_instr=0;
+    CPU.IF_ID_valid=0;
 
     CPU.ID_EX_pc=0;
     CPU.ID_EX_RS1_addr=0;
@@ -55,7 +56,6 @@ initial begin
     CPU.ID_EX_MemtoReg=0;
     CPU.ID_EX_RegWr=0;
     CPU.ID_EX_ALUinstr=0;
-    CPU.ID_EX_valid=0;
     
     CPU.EX_MEM_pc=0;
     CPU.EX_MEM_ALUResult=0;
