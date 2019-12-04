@@ -62,7 +62,7 @@ initial begin
     CPU.EX_MEM_RS2_data=0;
     CPU.EX_MEM_RD=0;
     CPU.EX_MEM_MemWr=0;
-    CPU.EX_MEM_Branch=0;
+    //CPU.EX_MEM_Branch=0;
     CPU.EX_MEM_MemtoReg=0;
     CPU.EX_MEM_RegWr=0;
     
@@ -101,7 +101,7 @@ end
   
 always@(posedge Clk) begin
     // TODO: change # of cycles as you need
-    if(counter == 150)    // stop after 30 cycles
+    if(counter == 64)    // stop after 30 cycles
         $finish;
 
     // TODO: put in your own signal to count stall and flush
