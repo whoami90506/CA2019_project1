@@ -78,10 +78,6 @@ wire MEM_PCSrc;
 
 wire [31:0] WB_Data;
 
-// forward wire
-wire [31:0] MUXA_o, MUXB_o;
-wire [1:0]  forwardA_w, forwardB_w;
-
 /*********************** 
       wire assignment
 ************************/
@@ -98,6 +94,8 @@ assign ID_Opcode          = IF_ID_instr[6:0];
 assign ID_ALUCtr_instr_in = {IF_ID_instr[30], IF_ID_instr[25], IF_ID_instr[14:12]};
 
 assign n_ID_EX_pc       = IF_ID_pc;
+assign n_ID_EX_RS1_addr = ID_RS1_addr;
+assign n_ID_EX_RS2_addr = ID_RS2_addr;
 assign n_ID_EX_RD       = ID_RD;
 assign n_ID_EX_RS1_data = Reg_RS1_data;
 assign n_ID_EX_RS2_data = Reg_RS2_data;
@@ -113,11 +111,11 @@ assign n_ID_EX_ALUinstr = ID_ALUCtr_instr_in;
 assign EX_imm_ext       = { {20{ID_EX_imm[11]}}, ID_EX_imm};
 assign EX_imm_ext_shift = {EX_imm_ext[30:0], 1'd0};
 assign EX_branch_pc     = ID_EX_pc + EX_imm_ext_shift;
-assign EX_ALU_in2       = ID_EX_ALUSrc ? EX_imm_ext : MUXB_o; // second mux
+assign EX_ALU_in2       = ID_EX_ALUSrc ? EX_imm_ext : ID_EX_RS2_data; // second mux
 
 assign n_EX_MEM_pc        = EX_branch_pc;
 assign n_EX_MEM_ALUResult = ALUResult;
-assign n_EX_MEM_RS2_data  = MUXB_o;
+assign n_EX_MEM_RS2_data  = ID_EX_RS2_data;
 assign n_EX_MEM_RD        = ID_EX_RD;
 assign n_EX_MEM_MemWr     = ID_EX_MemWr  & ~MEM_PCSrc;
 assign n_EX_MEM_Branch    = ID_EX_Branch & ~MEM_PCSrc;
@@ -132,14 +130,7 @@ assign n_MEM_WB_RD        = EX_MEM_RD;
 assign n_MEM_WB_MemtoReg  = EX_MEM_MemtoReg;
 assign n_MEM_WB_RegWr     = EX_MEM_RegWr;
 
-
 assign WB_Data = MEM_WB_MemtoReg ? MEM_WB_MemData : MEM_WB_ALUResult; // last mux
-
-/*********************** 
-forward wire assignment
-************************/
-assign n_ID_EX_RS1_addr = ID_RS1_addr;
-assign n_ID_EX_RS2_addr = ID_RS2_addr;
 /*********************** 
       always block
 ************************/
@@ -230,7 +221,7 @@ ALUControl ALUControl(
 );
 
 ALU ALU(
-    .data1_i(MUXA_o),
+    .data1_i(ID_EX_RS1_data),
     .data2_i(EX_ALU_in2),
     .action_i(ALUCtr_action),
     .result_o(ALUResult)
@@ -243,35 +234,5 @@ Data_Memory Data_Memory(
     .data_i         (EX_MEM_RS2_data),
     .data_o         (MemData)
 );
-
-Forward Forward(
-    .rs_1      (ID_EX_RS1_addr),
-    .rs_2      (ID_EX_RS2_addr),
-    .EM_rd     (EX_MEM_RD),
-    .MW_rd     (MEM_WB_RD),
-    .EM_regw   (EX_MEM_RegWr),
-    .MW_regw   (MEM_WB_RegWr),
-    .forward_A (forwardA_w),
-    .forward_B (forwardB_w) 
-);
-/*********************** 
-    forward submodule
-************************/
-MUX_3 MUXA(
-    .data1_i  (ID_EX_RS1_data), 
-    .data2_i  (WB_Data), 
-    .data3_i  (EX_MEM_ALUResult), 
-    .select_i (forwardA_w), 
-    .data_o   (MUXA_o)
-);
-
-MUX_3 MUXB  (
-    .data1_i  (ID_EX_RS2_data), 
-    .data2_i  (WB_Data), 
-    .data3_i  (EX_MEM_ALUResult), 
-    .select_i (forwardB_w), 
-    .data_o   (MUXB_o)
-);
-
 
 endmodule
