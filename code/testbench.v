@@ -77,7 +77,7 @@ initial begin
     $dumpvars;
     
     // Load instructions into instruction memory
-    $readmemb("../testdata/nh_nf_beq_instruction.txt", CPU.Instruction_Memory.memory);
+    $readmemb("../testdata/Fibonacci_instruction.txt", CPU.Instruction_Memory.memory);
     
     // Open output file
     outfile = $fopen("../testdata/nh_nf_beq_output.txt") | 1;
@@ -101,12 +101,13 @@ end
   
 always@(posedge Clk) begin
     // TODO: change # of cycles as you need
-    if(counter == 30)    // stop after 30 cycles
+    if(counter == 150)    // stop after 30 cycles
         $finish;
 
     // TODO: put in your own signal to count stall and flush
     // if(CPU.HazardDetection.Stall_o == 1 && CPU.Control.Branch_o == 0)stall = stall + 1;
     if(CPU.MEM_PCSrc == 1)flush = flush + 1;  
+    if(CPU.stall == 1)stall = stall + 1;
    
 
     // print PC

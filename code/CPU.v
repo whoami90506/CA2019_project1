@@ -82,6 +82,11 @@ wire [31:0] WB_Data;
 wire [31:0] MUXA_o, MUXB_o;
 wire [1:0]  forwardA_w, forwardB_w;
 
+//hazard wire
+wire Hazard_o;
+wire stall;
+wire PCWrite;
+
 /*********************** 
       wire assignment
 ************************/
@@ -140,12 +145,22 @@ forward wire assignment
 ************************/
 assign n_ID_EX_RS1_addr = ID_RS1_addr;
 assign n_ID_EX_RS2_addr = ID_RS2_addr;
+
+/***********************
+hazard wire assigment
+***********************/
+assign stall = Hazard_o & ~MEM_PCSrc;
+assign PCWrite = ~stall;
+
 /*********************** 
       always block
 ************************/
 always @(posedge clk_i) begin
-    IF_ID_pc    <= n_IF_ID_pc;
-    IF_ID_instr <= n_IF_ID_instr;
+
+    if (stall==0)begin
+        IF_ID_pc    <= n_IF_ID_pc;
+        IF_ID_instr <= n_IF_ID_instr;
+    end
 
     ID_EX_pc       <= n_ID_EX_pc;
     ID_EX_RS1_addr <= n_ID_EX_RS1_addr;
@@ -162,6 +177,11 @@ always @(posedge clk_i) begin
     ID_EX_RegWr    <= n_ID_EX_RegWr;
     ID_EX_ALUinstr <= n_ID_EX_ALUinstr;
     IF_ID_valid    <= n_IF_ID_valid;
+    if (stall==1) begin
+        ID_EX_MemWr <= 0;
+        ID_EX_Branch<= 0;
+        ID_EX_RegWr <= 0;
+    end
 
     EX_MEM_pc        <= n_EX_MEM_pc;
     EX_MEM_ALUResult <= n_EX_MEM_ALUResult;
@@ -186,7 +206,7 @@ PC PC(
     .clk_i          (clk_i),
     .rst_i          (1'b1), // reset in testbench
     .start_i        (start_i),
-    .PCWrite_i      (1'b1), // set 0 for stall
+    .PCWrite_i      (PCWrite), // set 0 for stall
     .pc_i           (IF_next_pc),
     .pc_o           (PC_pc)
 );
@@ -271,6 +291,15 @@ MUX_3 MUXB  (
     .data3_i  (EX_MEM_ALUResult), 
     .select_i (forwardB_w), 
     .data_o   (MUXB_o)
+);
+
+HazardDetection HazardDetection(
+    .Rd       (n_EX_MEM_RD),
+    .MemRead  (n_EX_MEM_MemtoReg),
+    .RegWrite (n_EX_MEM_RegWr),
+    .rs1      (ID_RS1_addr),
+    .rs2      (ID_RS2_addr),                                                      
+    .stall_o  (Hazard_o)
 );
 
 
