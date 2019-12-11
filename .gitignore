@@ -2,3 +2,4 @@
 *.vcd
 *output.txt
 .vscode
+*.DS_Store
