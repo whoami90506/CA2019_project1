@@ -10,7 +10,7 @@ module Registers
     RS2data_o 
 );
 
-// Ports
+// Ports  
 input               clk_i;
 input   [4:0]       RS1addr_i;
 input   [4:0]       RS2addr_i;
