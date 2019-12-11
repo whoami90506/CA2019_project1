@@ -52,17 +52,14 @@ initial begin
     CPU.ID_EX_ALUOp=0;
     CPU.ID_EX_ALUSrc=0;
     CPU.ID_EX_MemWr=0;
-    CPU.ID_EX_Branch=0;
     CPU.ID_EX_MemtoReg=0;
     CPU.ID_EX_RegWr=0;
     CPU.ID_EX_ALUinstr=0;
     
-    CPU.EX_MEM_pc=0;
     CPU.EX_MEM_ALUResult=0;
     CPU.EX_MEM_RS2_data=0;
     CPU.EX_MEM_RD=0;
     CPU.EX_MEM_MemWr=0;
-    //CPU.EX_MEM_Branch=0;
     CPU.EX_MEM_MemtoReg=0;
     CPU.EX_MEM_RegWr=0;
     
@@ -77,10 +74,11 @@ initial begin
     $dumpvars;
     
     // Load instructions into instruction memory
-    $readmemb("../testdata/Fibonacci_instruction.txt", CPU.Instruction_Memory.memory);
+    $readmemb("../testdata/instruction.txt", CPU.Instruction_Memory.memory);
+    // $readmemb("../testdata/Fibonacci_instruction.txt", CPU.Instruction_Memory.memory);
     
     // Open output file
-    outfile = $fopen("../testdata/nh_nf_beq_output.txt") | 1;
+    outfile = $fopen("../testdata/output.txt") | 1;
     
     // Set Input n into data memory at 0x00
     CPU.Data_Memory.memory[0] = 8'h5;       // n = 5 for example
@@ -106,12 +104,12 @@ always@(posedge Clk) begin
 
     // TODO: put in your own signal to count stall and flush
     // if(CPU.HazardDetection.Stall_o == 1 && CPU.Control.Branch_o == 0)stall = stall + 1;
-    if(CPU.MEM_PCSrc == 1)flush = flush + 1;  
+    if(CPU.ID_PCSrc == 1)flush = flush + 1;  
     if(CPU.stall == 1)stall = stall + 1;
    
 
     // print PC
-    $fdisplay(outfile, "cycle = %d, Start = %d, Stall = %d, Flush = %d\nPC = %d", counter, Start, stall, flush, CPU.PC.pc_o);
+    $fdisplay(outfile, "cycle = %d, Start = %d, Stall = %0d, Flush = %0d\nPC = %d", counter, Start, stall, flush, CPU.PC.pc_o);
     
     // print Registers
     $fdisplay(outfile, "Registers");
