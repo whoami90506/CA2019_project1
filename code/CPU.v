@@ -54,9 +54,7 @@ wire [4:0] ID_RS1_addr, ID_RS2_addr, ID_RD;
 wire [6:0] ID_Opcode;
 wire [4:0] ID_ALUCtr_instr_in;
 
-wire [31:0] ID_imm_ext;
 wire [31:0] EX_ALU_in2;
-
 
 wire [31:0] WB_Data;
 
@@ -101,10 +99,8 @@ assign PCWrite = ~stall;
 ************************/
 always @(posedge clk_i) begin
 
-    if (stall==0)begin
-        IF_ID_pc    <= PC_pc;
-        IF_ID_instr <= InstrMem_instr;
-    end
+    IF_ID_pc       <= stall ? IF_ID_pc    : PC_pc;
+    IF_ID_instr    <= stall ? IF_ID_instr : InstrMem_instr;
     IF_ID_valid    <= ~ID_PCSrc & start_i;
 
     ID_EX_pc       <= IF_ID_pc;
@@ -116,14 +112,10 @@ always @(posedge clk_i) begin
     ID_EX_imm      <= ImmGen_imm;
     ID_EX_ALUOp    <= Ctr_ALUOp;
     ID_EX_ALUSrc   <= Ctr_ALUSrc;
-    ID_EX_MemWr    <= Ctr_MemWr & IF_ID_valid;
     ID_EX_MemtoReg <= Ctr_MemtoReg;
-    ID_EX_RegWr    <= Ctr_RegWr & IF_ID_valid;
     ID_EX_ALUinstr <= ID_ALUCtr_instr_in;
-    if (stall==1) begin
-        ID_EX_MemWr <= 0;
-        ID_EX_RegWr <= 0;
-    end
+    ID_EX_MemWr    <= Ctr_MemWr & IF_ID_valid & ~stall;
+    ID_EX_RegWr    <= Ctr_RegWr & IF_ID_valid & ~stall;
 
     EX_MEM_ALUResult <= ALUResult;
     EX_MEM_RS2_data  <= MUXB_o;
