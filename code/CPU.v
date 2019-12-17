@@ -1,7 +1,31 @@
-module CPU (
-    input clk_i, 
-    input start_i
+module CPU
+(
+	clk_i,
+	rst_i,
+	start_i,
+   
+	mem_data_i, 
+	mem_ack_i, 	
+	mem_data_o, 
+	mem_addr_o, 	
+	mem_enable_o, 
+	mem_write_o
 );
+
+//input
+input clk_i;
+input rst_i;
+input start_i;
+
+//
+// to Data Memory interface		
+//
+input	[256-1:0]	mem_data_i; 
+input				mem_ack_i; 	
+output	[256-1:0]	mem_data_o; 
+output	[32-1:0]	mem_addr_o; 	
+output				mem_enable_o; 
+output				mem_write_o; 
 
 /******************** 
       registers 
@@ -65,7 +89,6 @@ wire [1:0]  forwardA_w, forwardB_w;
 //hazard wire
 wire Hazard_o;
 wire stall;
-wire PCWrite;
 
 //branch
 wire [31:0] ID_Shift_imm;
@@ -92,7 +115,6 @@ assign WB_Data = MEM_WB_MemtoReg ? MEM_WB_MemData : MEM_WB_ALUResult; // last mu
 hazard wire assigment
 ***********************/
 assign stall = Hazard_o & ~ID_PCSrc;
-assign PCWrite = ~stall;
 
 /*********************** 
       always block
@@ -136,9 +158,10 @@ end
 ************************/
 PC PC(
     .clk_i          (clk_i),
-    .rst_i          (1'b1), // reset in testbench
+    .rst_i          (rst_i),
     .start_i        (start_i),
-    .PCWrite_i      (PCWrite), // set 0 for stall
+    .stall_i        (stall),
+    .PCWrite_i      (1'b1), // set 0 for setting pc to 0
     .pc_i           (IF_next_pc),
     .pc_o           (PC_pc)
 );
@@ -188,13 +211,38 @@ ALU ALU(
     .result_o(ALUResult)
 );
 
-Data_Memory Data_Memory(
-    .clk_i          (clk_i),
-    .addr_i         (EX_MEM_ALUResult),
-    .MemWrite_i     (EX_MEM_MemWr),
-    .data_i         (EX_MEM_RS2_data),
-    .data_o         (MemData)
+// Data_Memory Data_Memory(
+//     .clk_i          (clk_i),
+//     .addr_i         (EX_MEM_ALUResult),
+//     .MemWrite_i     (EX_MEM_MemWr),
+//     .data_i         (EX_MEM_RS2_data),
+//     .data_o         (MemData)
+// );
+
+//data cache
+dcache_top dcache
+(
+    // System clock, reset and stall
+	.clk_i(clk_i), 
+	.rst_i(rst_i),
+	
+	// to Data Memory interface		
+	.mem_data_i(mem_data_i), 
+	.mem_ack_i(mem_ack_i), 	
+	.mem_data_o(mem_data_o), 
+	.mem_addr_o(mem_addr_o), 	
+	.mem_enable_o(mem_enable_o), 
+	.mem_write_o(mem_write_o), 
+	
+	// to CPU interface	
+	.p1_data_i(), 
+	.p1_addr_i(), 	
+	.p1_MemRead_i(), 
+	.p1_MemWrite_i(), 
+	.p1_data_o(), 
+	.p1_stall_o()
 );
+
 
 Forward Forward(
     .rs_1      (ID_EX_RS1_addr),
