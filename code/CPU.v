@@ -69,7 +69,8 @@ wire        Ctr_ALUSrc, Ctr_MemWr, Ctr_Branch, Ctr_MemtoReg, Ctr_RegWr;
 wire [31:0] ImmGen_imm;
 wire [ 2:0] ALUCtr_action;
 wire [31:0] ALUResult;
-wire [31:0] MemData;
+wire [31:0] cache_data;
+wire        cache_stall;
 
 // pure wire
 wire [31:0] IF_next_pc;
@@ -121,36 +122,36 @@ assign stall = Hazard_o & ~ID_PCSrc;
 ************************/
 always @(posedge clk_i) begin
 
-    IF_ID_pc       <= stall ? IF_ID_pc    : PC_pc;
-    IF_ID_instr    <= stall ? IF_ID_instr : InstrMem_instr;
-    IF_ID_valid    <= ~ID_PCSrc & start_i;
+    IF_ID_pc       <= stall | cache_stall ? IF_ID_pc    : PC_pc;
+    IF_ID_instr    <= stall | cache_stall ? IF_ID_instr : InstrMem_instr;
+    IF_ID_valid    <= cache_stall         ? IF_ID_valid : ~ID_PCSrc & start_i;
 
-    ID_EX_pc       <= IF_ID_pc;
-    ID_EX_RS1_addr <= ID_RS1_addr;
-    ID_EX_RS1_data <= Reg_RS1_data;
-    ID_EX_RS2_addr <= ID_RS2_addr;
-    ID_EX_RS2_data <= Reg_RS2_data;
-    ID_EX_RD       <= ID_RD;
-    ID_EX_imm      <= ImmGen_imm;
-    ID_EX_ALUOp    <= Ctr_ALUOp;
-    ID_EX_ALUSrc   <= Ctr_ALUSrc;
-    ID_EX_MemtoReg <= Ctr_MemtoReg;
-    ID_EX_ALUinstr <= ID_ALUCtr_instr_in;
-    ID_EX_MemWr    <= Ctr_MemWr & IF_ID_valid & ~stall;
-    ID_EX_RegWr    <= Ctr_RegWr & IF_ID_valid & ~stall;
+    ID_EX_pc       <= cache_stall ? ID_EX_pc       : IF_ID_pc;
+    ID_EX_RS1_addr <= cache_stall ? ID_EX_RS1_addr : ID_RS1_addr;
+    ID_EX_RS1_data <= cache_stall ? ID_EX_RS1_data : Reg_RS1_data;
+    ID_EX_RS2_addr <= cache_stall ? ID_EX_RS2_addr : ID_RS2_addr;
+    ID_EX_RS2_data <= cache_stall ? ID_EX_RS2_data : Reg_RS2_data;
+    ID_EX_RD       <= cache_stall ? ID_EX_RD       : ID_RD;
+    ID_EX_imm      <= cache_stall ? ID_EX_imm      : ImmGen_imm;
+    ID_EX_ALUOp    <= cache_stall ? ID_EX_ALUOp    : Ctr_ALUOp;
+    ID_EX_ALUSrc   <= cache_stall ? ID_EX_ALUSrc   : Ctr_ALUSrc;
+    ID_EX_MemtoReg <= cache_stall ? ID_EX_MemtoReg : Ctr_MemtoReg;
+    ID_EX_ALUinstr <= cache_stall ? ID_EX_ALUinstr : ID_ALUCtr_instr_in;
+    ID_EX_MemWr    <= cache_stall ? ID_EX_MemWr    : Ctr_MemWr & IF_ID_valid & ~stall;
+    ID_EX_RegWr    <= cache_stall ? ID_EX_RegWr    : Ctr_RegWr & IF_ID_valid & ~stall;
 
-    EX_MEM_ALUResult <= ALUResult;
-    EX_MEM_RS2_data  <= MUXB_o;
-    EX_MEM_RD        <= ID_EX_RD;
-    EX_MEM_MemWr     <= ID_EX_MemWr;
-    EX_MEM_MemtoReg  <= ID_EX_MemtoReg;
-    EX_MEM_RegWr     <= ID_EX_RegWr;
+    EX_MEM_ALUResult <= cache_stall ? EX_MEM_ALUResult : ALUResult;
+    EX_MEM_RS2_data  <= cache_stall ? EX_MEM_RS2_data  : MUXB_o;
+    EX_MEM_RD        <= cache_stall ? EX_MEM_RD        : ID_EX_RD;
+    EX_MEM_MemWr     <= cache_stall ? EX_MEM_MemWr     : ID_EX_MemWr;
+    EX_MEM_MemtoReg  <= cache_stall ? EX_MEM_MemtoReg  : ID_EX_MemtoReg;
+    EX_MEM_RegWr     <= cache_stall ? EX_MEM_RegWr     : ID_EX_RegWr;
 
-    MEM_WB_MemData   <= MemData;
-    MEM_WB_ALUResult <= EX_MEM_ALUResult;
-    MEM_WB_RD        <= EX_MEM_RD;
-    MEM_WB_MemtoReg  <= EX_MEM_MemtoReg;
-    MEM_WB_RegWr     <= EX_MEM_RegWr;
+    MEM_WB_MemData   <= cache_stall ? MEM_WB_MemData : cache_data;
+    MEM_WB_ALUResult <= cache_stall ? MEM_WB_ALUResult : EX_MEM_ALUResult;
+    MEM_WB_RD        <= cache_stall ? MEM_WB_RD : EX_MEM_RD;
+    MEM_WB_MemtoReg  <= cache_stall ? MEM_WB_MemtoReg : EX_MEM_MemtoReg;
+    MEM_WB_RegWr     <= cache_stall ? MEM_WB_RegWr : EX_MEM_RegWr;
 end
 
 /*********************** 
@@ -160,7 +161,7 @@ PC PC(
     .clk_i          (clk_i),
     .rst_i          (rst_i),
     .start_i        (start_i),
-    .stall_i        (stall),
+    .stall_i        (stall | cache_stall),
     .PCWrite_i      (1'b1), // set 0 for setting pc to 0
     .pc_i           (IF_next_pc),
     .pc_o           (PC_pc)
@@ -177,7 +178,7 @@ Registers Registers(
     .RS2addr_i      (ID_RS2_addr),
     .RDaddr_i       (MEM_WB_RD),
     .RDdata_i       (WB_Data),
-    .RegWrite_i     (MEM_WB_RegWr),
+    .RegWrite_i     (MEM_WB_RegWr & ~cache_stall),
     .RS1data_o      (Reg_RS1_data),
     .RS2data_o      (Reg_RS2_data)
 );
@@ -216,7 +217,7 @@ ALU ALU(
 //     .addr_i         (EX_MEM_ALUResult),
 //     .MemWrite_i     (EX_MEM_MemWr),
 //     .data_i         (EX_MEM_RS2_data),
-//     .data_o         (MemData)
+//     .data_o         (cache_data)
 // );
 
 //data cache
@@ -235,12 +236,12 @@ dcache_top dcache
 	.mem_write_o(mem_write_o), 
 	
 	// to CPU interface	
-	.p1_data_i(), 
-	.p1_addr_i(), 	
-	.p1_MemRead_i(), 
-	.p1_MemWrite_i(), 
-	.p1_data_o(), 
-	.p1_stall_o()
+	.p1_data_i(EX_MEM_RS2_data), 
+	.p1_addr_i(EX_MEM_ALUResult), 	
+	.p1_MemRead_i(EX_MEM_MemtoReg), 
+	.p1_MemWrite_i(EX_MEM_MemWr), 
+	.p1_data_o(cache_data), 
+	.p1_stall_o(cache_stall)
 );
 
 
