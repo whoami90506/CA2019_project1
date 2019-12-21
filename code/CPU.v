@@ -279,7 +279,8 @@ HazardDetection HazardDetection(
     .MemRead  (ID_EX_MemtoReg),
     .RegWrite (ID_EX_RegWr),
     .rs1      (ID_RS1_addr),
-    .rs2      (ID_RS2_addr),                                                      
+    .rs2      (ID_RS2_addr),    
+    .opCode   (ID_Opcode),                                                  
     .stall_o  (Hazard_o)
 );
 
