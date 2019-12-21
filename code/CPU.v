@@ -135,7 +135,7 @@ always @(posedge clk_i) begin
     ID_EX_imm      <= cache_stall ? ID_EX_imm      : ImmGen_imm;
     ID_EX_ALUOp    <= cache_stall ? ID_EX_ALUOp    : Ctr_ALUOp;
     ID_EX_ALUSrc   <= cache_stall ? ID_EX_ALUSrc   : Ctr_ALUSrc;
-    ID_EX_MemtoReg <= cache_stall ? ID_EX_MemtoReg : Ctr_MemtoReg;
+    ID_EX_MemtoReg <= cache_stall ? ID_EX_MemtoReg : Ctr_MemtoReg & IF_ID_valid;
     ID_EX_ALUinstr <= cache_stall ? ID_EX_ALUinstr : ID_ALUCtr_instr_in;
     ID_EX_MemWr    <= cache_stall ? ID_EX_MemWr    : Ctr_MemWr & IF_ID_valid & ~stall;
     ID_EX_RegWr    <= cache_stall ? ID_EX_RegWr    : Ctr_RegWr & IF_ID_valid & ~stall;
